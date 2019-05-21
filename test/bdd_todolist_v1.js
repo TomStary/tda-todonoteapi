@@ -81,18 +81,24 @@ describe("TodoLists", () => {
     it('it should receive a list of todo lists', (done) => {
       chai.request(server)
         .get('/api/v1/todolists')
-        // .auth(`Token ${apiToken}`, { options: { type: 'token' }})
         .set('Authorization', `Token ${apiToken}`)
         .send()
         .end((err, res) => {
           res.should.have.status(200);
+          res.body.should.have.property("todoLists").and.to.be.a("array");
           done();
         });
 	  });
 
     it('it should receive a list of todo lists (5 items)', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .get('/api/v1/todolists')
+        .set('Authorization', `Token ${apiToken}`)
+        .send()
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.body.should.have.property("todoLists").and.to.be.a("array").to.have.lengthOf(5);
+        })
 	  });
   });
 
