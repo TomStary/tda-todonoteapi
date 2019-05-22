@@ -36,6 +36,6 @@
     "dev": "NODE_ENV=development nodemon ./server.js",
     "routes": "node ./routes.js",
     "seed": "node ./seed.js",
-    "test": "mocha --timeout 10000"
+    "test": "mocha --timeout 10000 --exit"
   }
 }
