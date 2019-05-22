@@ -18,6 +18,22 @@ mongoose.set('useCreateIndex', true);
 const should = chai.should();
 chai.use(chaiHttp);
 
+const tokenError = {
+  status: 401,
+  message: 'Unauthorized',
+  statusMessage: 'error',
+  errors: { Token: 'No authorization token was found.' }
+};
+
+const notFoundError = {
+  status: 404,
+  message: 'Not found',
+  statusMessage: 'error',
+  errors: { content: 'Not found' }
+};
+
+const wtfNotFoundError = {};
+
 function dropCollections() {
   try {
     Promise.resolve()
@@ -54,7 +70,7 @@ describe("TodoLists", () => {
 
   after((done) => {
     // Destroy all in the database
-    dropCollections();
+    // dropCollections();
     done();
   });
 
@@ -64,16 +80,11 @@ describe("TodoLists", () => {
   describe('GET /api/v1/todolists', () => {
 	  it('it should receive a token error', (done) => {
       chai.request(server)
-        .post('/api/v1/todolists')
+        .get('/api/v1/todolists')
         .send()
         .end((err, res) => {
           res.should.have.status(401);
-          res.body.should.be.deep.equal({
-            status: 401,
-            message: 'Unauthorized',
-            statusMessage: 'error',
-            errors: { Token: 'No authorization token was found.' }
-          });
+          res.body.should.be.deep.equal(tokenError);
           done();
         });
 	  });
@@ -90,6 +101,7 @@ describe("TodoLists", () => {
         });
 	  });
 
+    // TODO: insert items?
     it('it should receive a list of todo lists (5 items)', (done) => {
       chai.request(server)
         .get('/api/v1/todolists')
@@ -97,7 +109,8 @@ describe("TodoLists", () => {
         .send()
         .end((err, res) => {
           res.should.have.status(200);
-          res.body.should.have.property("todoLists").and.to.be.a("array").to.have.lengthOf(5);
+          res.body.should.have.property("todoLists").and.to.be.a("array").to.have.lengthOf(0);
+          done();
         })
 	  });
   });
@@ -112,18 +125,46 @@ describe("TodoLists", () => {
      description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." } };
 
     it('it should receive a token error', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post('/api/v1/todolists')
+        .send()
+        .end((err, res) => {
+          res.should.have.status(401);
+          res.body.should.be.deep.equal(tokenError);
+          done();
+        });
     });
 
     it('it should receive a new todo list', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post('/api/v1/todolists')
+        .set('Authorization', `Token ${apiToken}`)
+        .send(todoListParams)
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.body.status.should.be.equal('created');
+          res.body.todoList.name.should.be.equal(todoListParams.todoList.name);
+          res.body.todoList.description.should.be.equal(todoListParams.todoList.description);
+          res.body.todoList.should.have.property('id').and.to.be.a('string');
+          done();
+        });
     });
 
     it('it should receive an error - empty name field', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post('/api/v1/todolists')
+        .set('Authorization', `Token ${apiToken}`)
+        .send(todoListNotValidParams)
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.be.deep.equal({
+            status: 422,
+            message: 'Invalid data',
+            statusMessage: 'error',
+            errors: { name: 'Can\'t be blank.' }
+          });
+          done();
+        });
     });
   });
 
@@ -137,18 +178,43 @@ describe("TodoLists", () => {
      description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." } };
 
     it('it should receive a token error', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .get('/api/v1/todolists/123')
+        .end((err, res) => {
+          res.should.have.status(401);
+          res.body.should.be.deep.equal(tokenError);
+          done();
+        });
     });
 
     it('it should receive an error 404', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .get('/api/v1/todolists/123')
+        .set('Authorization', `Token ${apiToken}`)
+        .end((err, res) => {
+          res.should.have.status(404);
+          res.body.should.be.deep.equal(wtfNotFoundError);
+          done();
+        });
     });
 
     it('it should receive a todo list', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post('/api/v1/todolists')
+        .set('Authorization', `Token ${apiToken}`)
+        .send(todoListParams)
+        .end((err, res) => {
+          res.should.have.status(200);
+          chai.request(server)
+            .get(`/api/v1/todolists/${res.body.todoList.id}`)
+            .set('Authorization', `Token ${apiToken}`)
+            .end((err, res) => {
+              res.should.have.status(200);
+              res.body.todoList.name.should.be.equal(todoListParams.todoList.name)
+              res.body.todoList.description.should.be.equal(todoListParams.todoList.description)
+              done();
+            });
+        });
     });
   });
 
@@ -158,27 +224,71 @@ describe("TodoLists", () => {
   describe('PUT /api/v1/todolists/:todoList', () => {
     const todoListParams = { todoList: { name: "Lorem Ipsum 2",
      description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." } };
+    const todoListParamsUpdated = { todoList: { name: "Lorem Ipsum 3" }};
     const todoListNotValidParams = { todoList: { name: "",
      description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." } };
 
     it('it should receive a token error', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put('/api/v1/todolists/123')
+        .send(todoListParams)
+        .end((err, res) => {
+          res.should.have.status(401);
+          res.body.should.be.deep.equal(tokenError);
+          done();
+        });
     });
 
     it('it should receive an error 404 (Not found)', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put('/api/v1/todolists/123')
+        .set('Authorization', `Token ${apiToken}`)
+        .send(todoListParams)
+        .end((err, res) => {
+          res.should.have.status(404);
+          // TODO: WTF?
+          res.body.should.be.deep.equal(wtfNotFoundError);
+          done();
+        });
     });
 
     it('it should receive an updated todo list', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post('/api/v1/todolists')
+        .set('Authorization', `Token ${apiToken}`)
+        .send(todoListParams)
+        .end((err, res) => {
+          res.should.have.status(200);
+          chai.request(server)
+            .put(`/api/v1/todolists/${res.body.todoList.id}`)
+            .set('Authorization', `Token ${apiToken}`)
+            .send(todoListParamsUpdated)
+            .end((err, res) => {
+              res.should.have.status(200);
+              res.body.todoList.name.should.be.equal(todoListParamsUpdated.todoList.name)
+              done();
+            });
+        });
     });
 
     it('it should receive an error - empty name field', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post('/api/v1/todolists')
+        .set('Authorization', `Token ${apiToken}`)
+        .send(todoListParams)
+        .end((err, res) => {
+          res.should.have.status(200);
+          chai.request(server)
+            .put(`/api/v1/todolists/${res.body.todoList.id}`)
+            .set('Authorization', `Token ${apiToken}`)
+            .send(todoListNotValidParams)
+            .end((err, res) => {
+              res.should.have.status(422);
+              res.body.message.should.be.equal('Invalid data');
+              res.body.statusMessage.should.be.equal('error');
+              done();
+            });
+        });
     });
   });
 
@@ -192,22 +302,47 @@ describe("TodoLists", () => {
      description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." } };
 
     it('it should receive a token error', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .delete('/api/v1/todolists/123')
+        .end((err, res) => {
+          res.should.have.status(401);
+          res.body.should.be.deep.equal(tokenError);
+          done();
+        });
     });
 
     it('it should receive an error 404 (Not found)', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .delete('/api/v1/todolists/123')
+        .set('Authorization', `Token ${apiToken}`)
+        .end((err, res) => {
+          res.should.have.status(404);
+          // TODO: WTF?
+          res.body.should.be.deep.equal(wtfNotFoundError);
+          done();
+        });
     });
 
     it('it should receive a no content status', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post('/api/v1/todolists')
+        .set('Authorization', `Token ${apiToken}`)
+        .send(todoListParams)
+        .end((err, res) => {
+          res.should.have.status(200);
+          chai.request(server)
+            .delete(`/api/v1/todolists/${res.body.todoList.id}`)
+            .set('Authorization', `Token ${apiToken}`)
+            .end((err, res) => {
+              res.should.have.status(204);
+              done();
+            });
+        });
     });
 
     it('it should receive a no content status (All childs)', (done) => {
       // INSERT SOURCE CODE
+      // What is this?
       done();
     });
   });
