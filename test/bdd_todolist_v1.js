@@ -441,7 +441,6 @@ describe("TodoLists", () => {
             .set('Authorization', `Token ${apiToken}`)
             .end((err, res) => {
               res.should.have.status(204);
-            }).then(() => {
               TodoList.findById(todoListId).then((result) => {
                 should.equal(null, result);
                 TodoListTask.findById(task._id).then((taskRes) => {
