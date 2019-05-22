@@ -43,7 +43,7 @@ function dropCollections() {
     Promise.resolve()
       .then(() => TodoList.collection.drop())
       .then(() => User.collection.drop())
-      .then(() => TodoList.collection.drop())
+      .then(() => TodoList.collection.drop())
   } catch (error) {
     console.warn('Error!', error);
   }
@@ -424,7 +424,34 @@ describe("TodoLists", () => {
 
     it('it should receive a no content status (All childs)', (done) => {
       // Kontrolo smazání všech todolistu i děti dětí (kaskáda) po akci s mazáním
-      done();
+      const todoList = {
+        name: "Test",
+        description: "",
+        number: 1,
+        author: userId,
+      };
+      TodoList.create(todoList).then((todo) => {
+        const todoListId = todo._id;
+        TodoListTask.create({
+          name: "Testovaci task",
+          todoList: todo
+        }).then((task) => {
+          chai.request(server)
+            .delete(`/api/v1/todolists/${todoListId}`)
+            .set('Authorization', `Token ${apiToken}`)
+            .end((err, res) => {
+              res.should.have.status(204);
+            }).then(() => {
+              TodoList.findById(todoListId).then((result) => {
+                should.equal(null, result);
+                TodoListTask.findById(task._id).then((taskRes) => {
+                  should.equal(null, taskRes);
+                  done();
+                });
+              });
+            });
+        });
+      });
     });
   });
 });
