@@ -41,9 +41,9 @@ const wtfNotFoundError = {};
 function dropCollections() {
   try {
     Promise.resolve()
-      .then(() => TodoList.remove({}))
-      .then(() => User.remove({}))
-      .then(() => TodoList.remove({}))
+      .then(() => TodoList.collection.drop())
+      .then(() => User.collection.drop())
+      .then(() => TodoList.collection.drop())
   } catch (error) {
     console.warn('Error!', error);
   }
