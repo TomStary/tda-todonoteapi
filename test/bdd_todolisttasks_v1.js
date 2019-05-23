@@ -22,19 +22,19 @@ const tokenError = {
   }
 };
 
-function dropCollections() {
+const dropCollections = async () => {
   try {
-    User.collection.drop().then(result => {}).catch(err => {});
+    await User.collection.drop().then(result => {}).catch(err => {});
   } catch (error) {
-    console.warn('Users collection may not exists!');
+	  console.warn('Users collection may not exists!');
   }
   try {
-    TodoList.collection.drop().then(result => {}).catch(err => {});
+    await TodoList.collection.drop().then(result => {}).catch(err => {});
   } catch (error) {
-    console.warn('TodoLists collection may not exists!');
+	  console.warn('TodoLists collection may not exists!');
   }
   try {
-    TodoListTask.collection.drop().then(result => {}).catch(err => {});
+    await TodoListTask.collection.drop().then(result => {}).catch(err => {});
   } catch (error) {
     console.warn('TodoListTasks collection may not exists!');
   }
