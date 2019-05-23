@@ -260,6 +260,7 @@ describe('TodoListTasks', () => {
           TodoListTask.create(todoTaskModel)
             .then((task) => {
               todoListTaskLocalId = task._id;
+              todoListTaskLocal = task;
               done();
             });
         });
@@ -288,8 +289,15 @@ describe('TodoListTasks', () => {
     });
 
     it('it should receive a todo list task', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .get(`/api/v1/todolists/${todoListLocalId}/tasks/${todoListTaskLocalId}`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send()
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.body.should.have.property('task').and.to.have.property('id', todoListTaskLocalId.toString());
+          done();
+        });
     });
   });
 
@@ -321,23 +329,55 @@ describe('TodoListTasks', () => {
     };
 
     before((done) => {
-      // INSERT SOURCE CODE
-      done();
+      let todoListModel = todoListParams.todoList;
+      todoListModel.author = userId;
+      TodoList.create(todoListModel)
+        .then((todo) => {
+          todoListLocalId = todo._id;
+          let todoTaskModel = todoListTaskParams.task;
+          todoTaskModel.todoList = todo;
+          TodoListTask.create(todoTaskModel)
+            .then((task) => {
+              todoListTaskLocalId = task._id;
+              todoListTaskLocal = task;
+              done();
+            });
+        });
     });
 
     it('it should receive a token error', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .get(`/api/v1/todolists/${todoListLocalId}/tasks/${todoListTaskLocalId}`)
+        .send()
+        .end((err, res) => {
+          res.should.have.status(401);
+          res.body.should.be.deep.equal(tokenError);
+          done();
+        });
     });
 
     it('it should receive an error 404 (Not found)', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put(`/api/v1/todolists/${todoListLocalId}/tasks/123`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send()
+        .end((err, res) => {
+          res.should.have.status(404);
+          done();
+        });
     });
 
     it('it should receive a todo list task', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put(`/api/v1/todolists/${todoListLocalId}/tasks/${todoListTaskLocalId}`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send(todoListTaskEditParams)
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.body.should.have.property('status', 'updated');
+          res.body.should.have.property('task').and.to.have.property('description', todoListTaskEditParams.task.description);
+          done();
+        });
     });
   });
 
@@ -363,23 +403,57 @@ describe('TodoListTasks', () => {
     };
 
     before((done) => {
-      // INSERT SOURCE CODE
-      done();
+      let todoListModel = todoListParams.todoList;
+      todoListModel.author = userId;
+      TodoList.create(todoListModel)
+        .then((todo) => {
+          todoListLocalId = todo._id;
+          let todoTaskModel = todoListTaskParams.task;
+          todoTaskModel.todoList = todo;
+          TodoListTask.create(todoTaskModel)
+            .then((task) => {
+              todoListTaskLocalId = task._id;
+              todoListTaskLocal = task;
+              done();
+            });
+        });
     });
 
     it('it should receive a token error', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .delete(`/api/v1/todolists/${todoListLocalId}/tasks/${todoListTaskLocalId}`)
+        .send()
+        .end((err, res) => {
+          res.should.have.status(401);
+          res.body.should.be.deep.equal(tokenError);
+          done();
+        });
     });
 
     it('it should receive an error 404 (Not found)', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .delete(`/api/v1/todolists/${todoListLocalId}/tasks/123`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send()
+        .end((err, res) => {
+          res.should.have.status(404);
+          done();
+        });
     });
 
     it('it should delete a todo list task', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .delete(`/api/v1/todolists/${todoListLocalId}/tasks/${todoListTaskLocalId}`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send()
+        .end((err, res) => {
+          res.should.have.status(204);
+          TodoListTask.findById(todoListTaskLocalId)
+            .then((result) => {
+              should.equal(null, result);
+              done();
+            });
+        });
     });
   });
 });
