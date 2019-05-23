@@ -1,3 +1,4 @@
+/// <reference types="chai" />
 process.env.NODE_ENV = 'test';
 
 const chai = require('chai');
@@ -12,21 +13,33 @@ const User = mongoose.model('User');
 const should = chai.should();
 chai.use(chaiHttp);
 
-function dropCollections() {
+
+const blankError = "Can\'t be blank.";
+
+const tokenError = {
+  status: 401,
+  message: 'Unauthorized',
+  statusMessage: 'error',
+  errors: {
+    Token: 'No authorization token was found.'
+  }
+};
+
+const dropCollections = async () => {
   try {
-    User.collection.drop().then(result => {}).catch(err => {});
+    await User.collection.drop().then(result => {}).catch(err => {});
   } catch (error) {
-	   console.warn('Users collection may not exists!');
+	  console.warn('Users collection may not exists!');
   }
   try {
-    TodoList.collection.drop().then(result => {}).catch(err => {});
+    await TodoList.collection.drop().then(result => {}).catch(err => {});
   } catch (error) {
-	   console.warn('TodoLists collection may not exists!');
+	  console.warn('TodoLists collection may not exists!');
   }
   try {
-    TodoListTask.collection.drop().then(result => {}).catch(err => {});
+    await TodoListTask.collection.drop().then(result => {}).catch(err => {});
   } catch (error) {
-     console.warn('TodoListTasks collection may not exists!');
+    console.warn('TodoListTasks collection may not exists!');
   }
 }
 
@@ -67,13 +80,27 @@ describe('Users', () => {
   //
   describe('GET /api/v1/user', () => {
     it('it should receive a token error', (done) => {
-      // INSERT SOURCE CODE
-      done();
-	  });
+      chai.request(server)
+        .get('/api/v1/user')
+        .end((err, res) => {
+          res.should.have.status(401);
+          res.body.should.be.deep.equal(tokenError);
+          done();
+        });
+    });
 
     it('it should receive a user account info', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .get(`/api/v1/user`)
+        .set('Authorization', `Token ${apiToken}`)
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.body.user.should.have.property('id');
+          res.body.user.should.have.property('token');
+          res.body.user.should.have.property('fullname').equal(userParams.user.fullname);
+          res.body.user.should.have.property('email').equal(userParams.user.email);
+          done();
+        });
     });
   });
 
@@ -82,34 +109,70 @@ describe('Users', () => {
   //
   describe('POST /api/v1/users/login', () => {
     it('it should receive an error - empty user values', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post(`/api/v1/users/login`)
+        .set('Authorization', `Token ${apiToken}`)
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          done();
+        });
 	  });
 
-    it('it should receive an error - empty user values', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
-
     it('it should receive an error - empty user values email and password', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users/login`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: {}})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('email').to.be.equal(blankError);
+          res.body.errors.should.have.property('password').to.be.equal(blankError);
+          done();
+        });
+	  });
 
     it('it should receive an error - empty user values email', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users/login`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { email: "", password: "demodemo" }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('email').to.be.equal(blankError);
+          res.body.errors.should.not.have.property('password');
+          done();
+        });
+	  });
 
     it('it should receive an error - empty user values password', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users/login`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { email: "demo@demo.com", password: "" }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.not.have.property('email');
+          res.body.errors.should.have.property('password').to.be.equal(blankError);
+          done();
+        });
+	  });
 
     it('it should receive an error - email or password is invalid', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users/login`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { email: "hellokitty@fit.cvut.cz", password: "trollolololololol" }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('email or password').to.be.equal('is invalid');
+          done();
+        });
+	  });
   });
 
   //
@@ -117,43 +180,109 @@ describe('Users', () => {
   //
   describe('PUT /api/v1/user', () => {
     it('it should receive a token error', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put('/api/v1/user')
+        .send(userEditParams)
+        .end((err, res) => {
+          res.should.have.status(401);
+          res.body.should.be.deep.equal(tokenError);
+          done();
+        });
     });
 
     it('it should receive an error - current password is not correct #1', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put(`/api/v1/user`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: {}})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('currentPassword').to.be.equal(blankError);
+          done();
+        });
 	  });
 
     it('it should receive an error - current password is not correct #2', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put(`/api/v1/user`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { currentPassword: '' }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('currentPassword').to.be.equal(blankError);
+          done();
+        });
 	  });
 
     it('it should receive an error - current password is not correct #3', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put(`/api/v1/user`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { currentPassword: '💩' }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('currentPassword').to.be.equal('Current password isn\'t correct.');
+          done();
+        });
 	  });
 
     it('it should receive an error - fullname value is empty', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put(`/api/v1/user`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { currentPassword: userParams.user.password, fullname: '' }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('fullname').to.be.equal(blankError);
+          done();
+        });
 	  });
 
     it('it should receive an error - password value is empty', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .put(`/api/v1/user`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { currentPassword: userParams.user.password, password: '' }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('password').to.be.equal(blankError);
+          done();
+        });
+	  });
 
     it('it should receive a updated fullname', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put(`/api/v1/user`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { currentPassword: userParams.user.password, password: userParams.user.password, fullname: userEditParams.user.fullname }})
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.body.status.should.be.equal('updated');
+          res.body.user.should.have.property('fullname').to.be.equal(userEditParams.user.fullname);
+          done();
+        });
 	  });
 
     it('it should receive a updated password', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .put(`/api/v1/user`)
+        .set('Authorization', `Token ${apiToken}`)
+        .send({ user: { currentPassword: userParams.user.password, password: userEditParams.user.password, fullname: userParams.user.fullname }})
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.body.status.should.be.equal('updated');
+          User.findById(res.body.user.id)
+            .then((user) => {
+              chai.expect(user.validPassword(userEditParams.user.password)).to.be.true;
+              done();
+            })
+            .catch(done)
+        });
 	  });
   });
 
@@ -162,53 +291,144 @@ describe('Users', () => {
   //
   describe('POST /api/v1/users', () => {
     it('it should receive an error - empty user values', (done) => {
-      // INSERT SOURCE CODE
-      done();
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('fullname').to.be.equal(blankError);
+          res.body.errors.should.have.property('email').to.be.equal(blankError);
+          res.body.errors.should.have.property('password').to.be.equal(blankError);
+          done();
+        });
 	  });
 
     it('it should receive an error - empty field values fullname, email, and password', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send({ user: { }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('fullname').to.be.equal(blankError);
+          res.body.errors.should.have.property('email').to.be.equal(blankError);
+          res.body.errors.should.have.property('password').to.be.equal(blankError);
+          done();
+        });
+	  });
 
     it('it should receive an error - empty field values email and password', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send({ user: { fullname: userSecondParams.user.fullname }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('email').to.be.equal(blankError);
+          res.body.errors.should.not.have.property('fullname');
+          res.body.errors.should.have.property('password').to.be.equal(blankError);
+          done();
+        });
+	  });
 
     it('it should receive an error - empty field values fullname and password', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send({ user: { email: userSecondParams.user.email }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.not.have.property('email');
+          res.body.errors.should.have.property('fullname').to.be.equal(blankError);
+          res.body.errors.should.have.property('password').to.be.equal(blankError);
+          done();
+        });
+	  });
 
     it('it should receive an error - empty field values fullname and email', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send({ user: { password: userSecondParams.user.password }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('email').to.be.equal(blankError);
+          res.body.errors.should.have.property('fullname').to.be.equal(blankError);
+          res.body.errors.should.not.have.property('password');
+          done();
+        });
+	  });
 
     it('it should receive an error - empty field value fullname', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send({ user: { email: userSecondParams.user.email, password: userSecondParams.user.password }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.not.have.property('email');
+          res.body.errors.should.have.property('fullname').to.be.equal(blankError);
+          res.body.errors.should.not.have.property('password');
+          done();
+        });
+	  });
 
     it('it should receive an error - empty field value email', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send({ user: { fullname: userSecondParams.user.fullname, password: userSecondParams.user.password }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.have.property('email').to.be.equal(blankError);
+          res.body.errors.should.not.have.property('fullname');
+          res.body.errors.should.not.have.property('password');
+          done();
+        });
+	  });
 
     it('it should receive an error - empty field value password', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send({ user: { email: userSecondParams.user.email, fullname: userSecondParams.user.fullname }})
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.have.property('errors');
+          res.body.errors.should.not.have.property('email');
+          res.body.errors.should.not.have.property('fullname');
+          res.body.errors.should.have.property('password').to.be.equal(blankError);
+          done();
+        });
+	  });
 
     it('it should receive a new user account', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send(userSecondParams)
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.body.user.should.have.property('id');
+          res.body.user.should.have.property('token');
+          res.body.user.should.have.property('fullname').equal(userSecondParams.user.fullname);
+          res.body.user.should.have.property('email').equal(userSecondParams.user.email);
+          done();
+        });
+	  });
 
     it('it should receive an error - duplicit email account', (done) => {
-      // INSERT SOURCE CODE
-      done();
-    });
+      chai.request(server)
+        .post(`/api/v1/users`)
+        .send(userParams)
+        .end((err, res) => {
+          res.should.have.status(422);
+          res.body.should.be.deep.equal({
+            status: 422,
+            message: 'Invalid data',
+            statusMessage: 'error',
+            errors: { email: 'Is already taken.' }
+          })
+          done();
+        });
+	  });
   });
 });
