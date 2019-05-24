@@ -80,7 +80,7 @@ describe("TodoLists", () => {
 
   after((done) => {
     // Destroy all in the database
-    // dropCollections();
+    dropCollections();
     done();
   });
 
