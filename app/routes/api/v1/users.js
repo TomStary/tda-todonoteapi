@@ -142,7 +142,7 @@ router.post('/users', (req, res, next) => {
   }).catch(next);
 });
 
-router.delete('/user/:userId', (req, res, next) => {
+router.delete('/user/:userId', auth.required, (req, res, next) => {
   if(!req.payload.id) {
     return res.sendStatus(403);
   }
@@ -152,7 +152,7 @@ router.delete('/user/:userId', (req, res, next) => {
       return res.sendStatus(404);
     }
 
-    if (user._id === req.payload.id) {
+    if (user._id.toString() === req.payload.id) {
       return res
         .status(422)
         .json({

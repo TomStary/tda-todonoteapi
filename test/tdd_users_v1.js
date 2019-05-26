@@ -111,10 +111,10 @@ describe('Users', () => {
 
     it('should delete existing user', (done) => {
       const userObject = new User({
-        fullname: userParams.user.fullname,
-        email: userParams.user.email
+        fullname: userSecondParams.user.fullname,
+        email: userSecondParams.user.email
       });
-      userObject.setPassword(userParams.user.password);
+      userObject.setPassword(userSecondParams.user.password);
 
       userObject.save()
         .then((newUser) => {
@@ -127,7 +127,7 @@ describe('Users', () => {
                 done();
               });
           }
-          throw new Error('Can\'t insert new user');
+          throw new Error('Can\'t insert new user.');
         })
         .catch(done)
     });
