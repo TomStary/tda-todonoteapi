@@ -142,4 +142,36 @@ router.post('/users', (req, res, next) => {
   }).catch(next);
 });
 
+router.delete('/user/:userId', (req, res, next) => {
+  if(!req.payload.id) {
+    return res.sendStatus(403);
+  }
+
+  User.findById(req.params.userId).then((user) => {
+    if(!user) {
+      return res.sendStatus(404);
+    }
+
+    if (user._id === req.payload.id) {
+      return res
+        .status(422)
+        .json({
+          status: 422,
+          message: 'Unprocessable Entity',
+          statusMessage: 'error',
+          errors: {
+            user: 'Can\'t delete current user.'
+          }
+        });
+    }
+
+    return user
+      .deleteOne()
+      .then(() => {
+        return res.sendStatus(204);
+      });
+  }).catch(next);
+
+});
+
 module.exports = router;
