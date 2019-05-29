@@ -47,9 +47,27 @@ describe('Users', () => {
   const errorMessageEmailTakenField = "Is already taken.";
   const errorMessageBlankField = "Can't be blank.";
 
-  const userParams = { user: { fullname: "Demo Demo", email: "demo@demo.com", password: "demodemo" } };
-  const userEditParams = { user: { fullname: "Edit Edit", email: "edit@edit.com", password: "editedit" } };
-  const userSecondParams = { user: { fullname: "Demo Demo", email: "seconddemo@demo.com", password: "abc123abc" } };
+  const userParams = {
+    user: {
+      fullname: "Demo Demo",
+      email: "demo@demo.com",
+      password: "demodemo"
+    }
+  };
+  const userEditParams = {
+    user: {
+      fullname: "Edit Edit",
+      email: "edit@edit.com",
+      password: "editedit"
+    }
+  };
+  const userSecondParams = {
+    user: {
+      fullname: "Demo Demo",
+      email: "seconddemo@demo.com",
+      password: "abc123abc"
+    }
+  };
 
   before((done) => {
     // Destroy all in the database
@@ -63,7 +81,7 @@ describe('Users', () => {
         userId = res.body["user"]["id"];
         apiToken = res.body["user"]["token"];
         done();
-    });
+      });
   });
 
   after((done) => {
@@ -99,8 +117,9 @@ describe('Users', () => {
     });
 
     it('should receive an error - delete unknown user', (done) => {
+      const randomId = new mongoose.Types.ObjectId();
       chai.request(server)
-        .delete(`/api/v1/user/123`)
+        .delete(`/api/v1/user/${randomId.toHexString()}`)
         .set('Authorization', `Token ${apiToken}`)
         .end((err, res) => {
           res.should.have.status(404);
@@ -116,20 +135,15 @@ describe('Users', () => {
       });
       userObject.setPassword(userSecondParams.user.password);
 
-      userObject.save()
-        .then((newUser) => {
-          if (newUser) {
-            return chai.request(server)
-              .delete(`/api/v1/user/${newUser.id}`)
-              .set('Authorization', `Token ${apiToken}`)
-              .end((err, res) => {
-                res.should.have.status(204);
-                done();
-              });
-          }
-          throw new Error('Can\'t insert new user.');
-        })
-        .catch(done)
+      User.create(userObject).then((newUser) => {
+        chai.request(server)
+          .delete(`/api/v1/user/${newUser._id}`)
+          .set('Authorization', `Token ${apiToken}`)
+          .end((err, res) => {
+            res.should.have.status(204);
+            done();
+          });
+      });
     });
   });
 });
