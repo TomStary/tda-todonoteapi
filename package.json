@@ -24,7 +24,7 @@
     "passport": "0.3.2",
     "passport-local": "1.0.0",
     "request": "^2.88.0",
-    "underscore": "1.8.3"
+    "underscore": "1.12.1"
   },
   "devDependencies": {
     "chai": "3.5.0",
